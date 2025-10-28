@@ -1,10 +1,5 @@
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
 
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
 name: Java CI with Maven
 
 on:
@@ -22,12 +17,14 @@ jobs:
     steps:
       - name: Realiza o checkout do repositório
         uses: actions/checkout@v4
+
       - name: Configura o JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
+
       - name: Compila o projeto com Maven
         run: mvn -B compile --file pom.xml
 
@@ -38,20 +35,17 @@ jobs:
       name: hmg
     needs: build-dev
     steps:
-      - name: Realiza o checkout do repositório
+      - name: Realiza o checkout do repositório (full)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
+
       - name: Configura o JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
-          
-      - name: Testa o projeto com Maven
-        run: mvn -B test --file pom.xml
 
       - name: Cache SonarQube packages
         uses: actions/cache@v4
@@ -67,11 +61,23 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Build and analyze
+      - name: Run tests and generate JaCoCo report
+        run: |
+          mvn -B org.jacoco:jacoco-maven-plugin:0.8.8:prepare-agent \
+            test \
+            org.jacoco:jacoco-maven-plugin:0.8.8:report
+
+      - name: Build and analyze (SonarCloud)
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar-Dsonar.projectKey=laurafoes_calculator-java
-         org.jacoco:jacoco-maven-plugin:prepare-agent-Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+          SONAR_ORG: ${{ secrets.SONAR_ORG }}
+        run: |
+          mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey=laurafoes_calculator-java \
+            -Dsonar.organization=${SONAR_ORG} \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=${SONAR_TOKEN} \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
   # Jobs do ambiente de produção
   build-prd:
@@ -82,21 +88,23 @@ jobs:
     steps:
       - name: Realiza o checkout do repositório
         uses: actions/checkout@v4
+
       - name: Configura o JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
-      # Executa o empacotamento do projeto com o Maven.
-      # O parâmetro -DskipTests pula os testes pois já foram executados no ambiente anterior.
+
       - name: Empacota o projeto com Maven
         run: mvn -B package --file pom.xml -DskipTests
-      # Cria o artefato de download
+
       - name: Crie uma pasta temporária de downloads de artefatos
-        run: mkdir staging
+        run: mkdir -p staging
+
       - name: Copia os artefatos a serem publicados na pasta temporária
         run: cp target/*jar-with-dependencies.jar staging || true
+
       - name: Usa Upload Artifact do GitHub Action
         uses: actions/upload-artifact@v4
         with:
