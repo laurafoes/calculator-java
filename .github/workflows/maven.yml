@@ -42,12 +42,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          
       - name: Configura o JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
+          
       - name: Testa o projeto com Maven
         run: mvn -B test --file pom.xml
 
@@ -68,7 +70,8 @@ jobs:
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=laurafoes_calculator-java
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar-Dsonar.projectKey=laurafoes_calculator-java
+         org.jacoco:jacoco-maven-plugin:prepare-agent-Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
   # Jobs do ambiente de produção
   build-prd:
