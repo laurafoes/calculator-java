@@ -15,6 +15,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <sonar.organization>laurafoes</sonar.organization>
         <exec.mainClass>com.mycompany.calculator.Principal</exec.mainClass>
     </properties>
 
